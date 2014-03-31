@@ -1,0 +1,35 @@
+#include "serializable.h"
+#include <string>
+#include <vector>
+#include "datastream.h"
+
+class user;
+class character;
+class maze;
+class statistics;
+class Room;
+class Enemy;
+class Item;
+class Ability;
+
+
+#serialize user
+	std::string fullname;
+	std::string username;
+	std::string password;
+	std::vector<serializable *> characters;
+#end
+
+#serialize character
+	std::string charactername;
+	serializable * current;
+	serializable * max;
+#end
+
+#serialize statistics
+	int level;
+	int strength;
+	int defense;
+	int intelligence;
+	int resistance;
+#end

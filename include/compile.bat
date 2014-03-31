@@ -1,0 +1,2 @@
+g++ preprocessor.cpp
+pause
