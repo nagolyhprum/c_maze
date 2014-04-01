@@ -31,7 +31,7 @@ void datastream::operator &(std::string & s) {
 		char * data = new char[size];	
 		file->get();
 		file->read(data, size);
-		s = std::string(data, size);			
+		s = std::string(data, size);	
 		delete data;
 	} else {
 		*file << s.length() << " " << s;	
@@ -40,7 +40,7 @@ void datastream::operator &(std::string & s) {
 
 void datastream::operator &(int & i) {	
 	if(isRead) {	
-		*file >> i;
+		*file >> i;		
 	} else {
 		*file << i << " ";	
 	}
@@ -51,16 +51,24 @@ void datastream::operator &(serializable * & s) {
 		int id;
 		std::string name;
 		*file >> id;
-		*file >> name;
-		for(int i = 0; i < datastream::constructor_names->size(); i++) {
-			if(!(*constructor_names)[i].compare(name)) {
-				s = (*constructor_functions)[i](id);
-			}
+		if(id) {
+			*file >> name;
+			for(int i = 0; i < datastream::constructor_names->size(); i++) {
+				if(!(*constructor_names)[i].compare(name)) {
+					s = (*constructor_functions)[i](id);
+				}
+			}		
+			s->load();
+		} else {
+			s = NULL;
 		}
-		s->load();
 	} else {
-		*file << s->getID() << " " << s->getName() << " ";
-		s->save();
+		if(s != NULL) {
+			*file << s->getID() << " " << s->getName() << " ";
+			s->save();
+		} else {
+			*file << "0 ";
+		}
 	}
 };
 
@@ -82,6 +90,7 @@ void datastream::operator &(std::vector<serializable *> & ss) {
 			ss.push_back(s);
 		}
 	} else {
+		//there should not be nulls here
 		*file << ss.size() << " ";
 		for(int i = 0; i < ss.size(); i++) {			
 			*file << ss[i]->getID() << " " << ss[i]->getName() << " ";

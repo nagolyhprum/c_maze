@@ -45,10 +45,10 @@ class server {
 private:
 	bool closed;
 	vector<client> clients;
-	void (* f_message)(client, string);
-	void (* f_connect)(client);
-	void (* f_close)(client);
-	void (* f_error)(client, std::exception);
+	void (* f_message)(client &, string);
+	void (* f_connect)(client &);
+	void (* f_close)(client &);
+	void (* f_error)(client &, std::exception);
     WSADATA wsaData;
     SOCKET ListenSocket;
     struct addrinfo * result;
@@ -57,10 +57,10 @@ public:
 	void start();
 	void close();
 	bool connect();	
-	void onMessage(void (*)(client, string));
-	void onConnect(void (*)(client));
-	void onClose(void (*)(client));
-	void onError(void (*)(client, std::exception));
+	void onMessage(void (*)(client &, string));
+	void onConnect(void (*)(client &));
+	void onClose(void (*)(client &));
+	void onError(void (*)(client &, std::exception));
 };
 
 void client::close() {
@@ -175,19 +175,19 @@ bool server::connect() {
 	return true;
 }
 
-void server::onMessage(void (* message)(client, string)) {
+void server::onMessage(void (* message)(client &, string)) {
 	f_message = message;
 }
 
-void server::onConnect(void (* connect)(client)) {
+void server::onConnect(void (* connect)(client &)) {
 	f_connect = connect;
 }
 
-void server::onClose(void (* close)(client)) {
+void server::onClose(void (* close)(client &)) {
 	f_close = close;
 }
 
-void server::onError(void (* error)(client, std::exception)) {
+void server::onError(void (* error)(client &, std::exception)) {
 	f_error = error;
 }
 

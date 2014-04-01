@@ -6,8 +6,43 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+void characters(client & c, stringstream * ss) {
+	if(c.associated != NULL) {
+		string cmd;
+		*ss >> cmd;
+		stringstream res;
+		user * u = (user *)c.associated;
+		if(!cmd.compare("get")) {
+			res << "characters ";
+			res << u->characters.size() << " ";
+			for(int i = 0; i < u->characters.size(); i++) {
+				character * chr = (character *)u->characters[i];
+				res << chr->getID() << " ";
+				res << chr->charactername.length() << " ";
+				res << chr->charactername;
+			}
+		} else if(!cmd.compare("add")) {
+			character * chr = new character();
+			int length;
+			*ss >> length;
+			char * s = new char[length];
+			ss->get();
+			ss->read(s, length);			
+			chr->charactername = string(s, length);
+			chr->current = new statistics();
+			chr->max = new statistics();
+			chr->map = NULL;
+			u->characters.push_back(chr);
+			u->save();
+			res << "character " << chr->getID() << " " << chr->charactername.length() << " " << chr->charactername;
+			delete s;
+		}
+		c.sendMessage(res.str());
+	}
+}
+
 //hash password
-void signin(client c, stringstream * ss) {
+void signin(client & c, stringstream * ss) {
 	string username;
 	string password;
 	*ss >> username;
@@ -38,7 +73,7 @@ void signin(client c, stringstream * ss) {
 
 //extra validation
 //hash password
-void signup(client c, stringstream * ss) {		
+void signup(client & c, stringstream * ss) {		
 	string username;
 	string password;
 	*ss >> username;
@@ -54,12 +89,12 @@ void signup(client c, stringstream * ss) {
 	char * fn = new char[length];
 	ss->get();
 	ss->read(fn, length);
-	string fullname(fn, length);
 	user * u = new user();
-	u->fullname = fullname;
+	u->fullname = string(fn, length);
 	u->username = username;
 	u->password = password;
 	u->save();	
+	c.associated = u;
 	mkdir("accounts");
 	mkdir(("accounts/" + username).c_str());	
 	fstream out(("accounts/" + username + "/password.data").c_str(), fstream::out);
@@ -71,7 +106,7 @@ void signup(client c, stringstream * ss) {
 	c.sendMessage("log account created");
 }
 
-void onMessage(client c, string message) {
+void onMessage(client & c, string message) {
 	c.sendMessage("echo " + message);
 	stringstream * ss = new stringstream(message);
 	string command;
@@ -80,21 +115,24 @@ void onMessage(client c, string message) {
 		signin(c, ss);
 	} else if(!command.compare("signup")) {	
 		signup(c, ss);
+	} else if(!command.compare("characters")) {
+		characters(c, ss);
 	}
 	delete ss;
 }
 
-void onClose(client c) {
+void onClose(client & c) {	
 }
 
-void onError(client c, exception e) {
+void onError(client & c, exception e) {
 	c.close();
 }
 
-void onConnect(client c) {
+void onConnect(client & c) {
 }
 
 int main(void) {
+	datastream::register_constructors();
 	server s;
 	s.onMessage(onMessage);
 	s.onClose(onClose);

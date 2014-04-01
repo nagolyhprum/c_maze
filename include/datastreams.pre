@@ -19,14 +19,23 @@ class statistics;
 	std::string username;
 	std::string password;
 	std::vector<serializable *> characters;
+	std::vector<serializable *> behaviors;
+#end
+
+#serialize behavior 
+	std::string category;
+	std::string subcategory;
+	int current;
+	int required;
 #end
 
 #serialize character
 	std::string charactername;
 	serializable * current;
 	serializable * max;
-	vector<serializable *> equipment;
-	vector<serializable *> inventory;
+	std::vector<serializable *> equipment;
+	std::vector<serializable *> inventory;
+	serializable * map;
 #end
 
 #serialize statistics
@@ -35,4 +44,15 @@ class statistics;
 	int defense;
 	int intelligence;
 	int resistance;
+#end
+
+#serialize map
+	std::vector<serializable *> rooms;
+	int columns;
+	int rows;
+#end
+
+#serialize room
+	std::vector<serializable *> enemies;
+	std::vector<serializable *> items;
 #end
