@@ -3,15 +3,16 @@
 #include <vector>
 #include "datastream.h"
 
-class user;
+class badge;
+class behavior;
 class character;
-class maze;
+class enemy;
+class item;
+class map;
+class room;
+class user;
+class skill;
 class statistics;
-class Room;
-class Enemy;
-class Item;
-class Ability;
-
 
 #serialize user
 	std::string fullname;
@@ -24,6 +25,8 @@ class Ability;
 	std::string charactername;
 	serializable * current;
 	serializable * max;
+	vector<serializable *> equipment;
+	vector<serializable *> inventory;
 #end
 
 #serialize statistics
