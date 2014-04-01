@@ -14,13 +14,15 @@ void signin(client c, stringstream * ss) {
 	*ss >> password;
 	int id;
 	string s;
-	fstream in((username + "/password.data").c_str(), fstream::in);
+	fstream in(("accounts/" + username + "/password.data").c_str(), fstream::in);
 	if(in.good()) {
 		in >> s;
+		in.close();
 		if(!s.compare(password)) {
-			in.open((username + "/id.data").c_str(), fstream::in);
+			in.open(("accounts/" + username + "/id.data").c_str(), fstream::in);
 			if(in.good()) {
-				in >> id;				
+				in >> id;	
+				in.close();
 				user * u = new user(id);
 				u->load();
 				c.associated = u;	
@@ -31,7 +33,7 @@ void signin(client c, stringstream * ss) {
 		c.sendMessage("log invalid password");
 		return;
 	}
-	c.sendMessage("invalid username");
+	c.sendMessage("log invalid username");
 }
 
 //extra validation
@@ -62,13 +64,15 @@ void signup(client c, stringstream * ss) {
 	mkdir(("accounts/" + username).c_str());	
 	fstream out(("accounts/" + username + "/password.data").c_str(), fstream::out);
 	out << password;
+	out.close();
 	out.open(("accounts/" + username + "/id.data").c_str(), fstream::out);
-	int id = u->getID();
-	out << id;
+	out << u->getID();
+	out.close();
 	c.sendMessage("log account created");
 }
 
 void onMessage(client c, string message) {
+	c.sendMessage("echo " + message);
 	stringstream * ss = new stringstream(message);
 	string command;
 	*ss >> command;
