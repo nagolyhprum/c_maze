@@ -1,62 +1,108 @@
 #include "include/datastreams.h"
+#include "include/server.h"
+#include "include/lib.h"
 #include <iostream>
 #include <sstream>
-#include "include/server.h"
 #include <fstream>
 #include <sys/types.h>
 #include <dirent.h>
 
+string nextString(istream * in) {
+	int length;
+	*in >> length;
+	char * s = new char[length];
+	in->get();
+	in->read(s, length);
+	string ret(s, length);	
+	delete s;
+	return ret;
+}
+
+int nextInt(istream * in) {
+	int i;
+	*in >> i;
+	return i;
+}
+
+string next(istream * in) {
+	string s;
+	*in >> s;
+	return s;
+}
+
+void writeInt(ostream * out, int i) {
+	*out << i << " ";
+}
+
+void writeString(ostream * out, string s) {
+	*out << s.length() << " " << s;
+}
+
+void sendStatistics(client & c, statistics * s) {
+	stringstream ss;
+	ss << "statistics ";
+	writeInt(&ss, s->getID());
+	writeInt(&ss, s->level);
+	writeInt(&ss, s->strength);
+	writeInt(&ss, s->defense);
+	writeInt(&ss, s->intelligence);
+	writeInt(&ss, s->resistance);
+	c.sendMessage(ss.str());
+}
+
 void characters(client & c, stringstream * ss) {
 	if(c.associated != NULL) {
-		string cmd;
-		*ss >> cmd;
-		stringstream res;
+		string cmd = next(ss);
 		user * u = (user *)c.associated;
-		if(!cmd.compare("get")) {
-			res << "characters ";
-			res << u->characters.size() << " ";
+		if(!cmd.compare("getall")) {
 			for(int i = 0; i < u->characters.size(); i++) {
 				character * chr = (character *)u->characters[i];
-				res << chr->getID() << " ";
-				res << chr->charactername.length() << " ";
-				res << chr->charactername;
-			}
+				stringstream getone("getone " + to_string(chr->getID()));
+				characters(c, &getone);	
+			}			
 		} else if(!cmd.compare("add")) {
 			character * chr = new character();
-			int length;
-			*ss >> length;
-			char * s = new char[length];
-			ss->get();
-			ss->read(s, length);			
-			chr->charactername = string(s, length);
+			chr->charactername = nextString(ss);
 			chr->current = new statistics();
 			chr->max = new statistics();
 			chr->map = NULL;
 			u->characters.push_back(chr);
 			u->save();
-			res << "character " << chr->getID() << " " << chr->charactername.length() << " " << chr->charactername;
-			delete s;
+			stringstream getone("getone " + to_string(chr->getID()));
+			characters(c, &getone);
+		} else if(!cmd.compare("getone")) {
+			stringstream res;
+			res << "character ";			
+			int id = nextInt(ss);
+			character * chr;
+			for(int i = 0; i < u->characters.size(); i++) {
+				character * curr = (character *)u->characters[i];
+				if(curr->getID() == id) {
+					chr = curr;
+				}
+			}
+			writeInt(&res, id);
+			writeInt(&res, chr->current->getID());
+			writeInt(&res, chr->max->getID());
+			sendStatistics(c, (statistics *)chr->current);
+			sendStatistics(c, (statistics *)chr->max);
+			c.sendMessage(res.str());
 		}
-		c.sendMessage(res.str());
 	}
 }
 
 //hash password
 void signin(client & c, stringstream * ss) {
-	string username;
-	string password;
-	*ss >> username;
-	*ss >> password;
-	int id;
-	string s;
+	string username = next(ss);
+	string password = next(ss);
 	fstream in(("accounts/" + username + "/password.data").c_str(), fstream::in);
 	if(in.good()) {
-		in >> s;
+		string s = next(&in);
 		in.close();
 		if(!s.compare(password)) {
 			in.open(("accounts/" + username + "/id.data").c_str(), fstream::in);
 			if(in.good()) {
-				in >> id;	
+				int id = nextInt(&in);
 				in.close();
 				user * u = new user(id);
 				u->load();
@@ -74,23 +120,16 @@ void signin(client & c, stringstream * ss) {
 //extra validation
 //hash password
 void signup(client & c, stringstream * ss) {		
-	string username;
-	string password;
-	*ss >> username;
-	*ss >> password;
+	string username = next(ss);
+	string password = next(ss);
 	DIR * dir = opendir(("accounts/" + username).c_str());
 	if (dir) {
 		c.sendMessage("log that username is already in use");
 		closedir(dir);
 		return;
 	}	
-	int length;
-	*ss >> length;
-	char * fn = new char[length];
-	ss->get();
-	ss->read(fn, length);
 	user * u = new user();
-	u->fullname = string(fn, length);
+	u->fullname = nextString(ss);
 	u->username = username;
 	u->password = password;
 	u->save();	
@@ -108,17 +147,15 @@ void signup(client & c, stringstream * ss) {
 
 void onMessage(client & c, string message) {
 	c.sendMessage("echo " + message);
-	stringstream * ss = new stringstream(message);
-	string command;
-	*ss >> command;
+	stringstream ss(message);
+	string command = next(&ss);
 	if(!command.compare("signin")) {
-		signin(c, ss);
+		signin(c, &ss);
 	} else if(!command.compare("signup")) {	
-		signup(c, ss);
+		signup(c, &ss);
 	} else if(!command.compare("characters")) {
-		characters(c, ss);
+		characters(c, &ss);
 	}
-	delete ss;
 }
 
 void onClose(client & c) {	

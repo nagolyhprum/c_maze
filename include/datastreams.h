@@ -2,7 +2,6 @@
 #include <string>
 #include <vector>
 #include "datastream.h"
-
 class badge;
 class behavior;
 class character;
@@ -13,7 +12,6 @@ class room;
 class user;
 class skill;
 class statistics;
-
 class user : public serializable {
 public:
 	std::string fullname;
@@ -21,6 +19,20 @@ public:
 	std::string password;
 	std::vector<serializable *> characters;
 	std::vector<serializable *> behaviors;
+	user(int id) : serializable("user", id) {
+		fullname = "";
+		username = "";
+		password = "";
+		characters = std::vector<serializable *>();
+		behaviors = std::vector<serializable *>();
+	};
+	user() : serializable("user") {
+		fullname = "";
+		username = "";
+		password = "";
+		characters = std::vector<serializable *>();
+		behaviors = std::vector<serializable *>();
+	};
 	void serialize(datastream ds) {
 		ds & fullname;
 		ds & username;
@@ -28,36 +40,48 @@ public:
 		ds & characters;
 		ds & behaviors;
 	};
-	user(int id) : serializable("user", id) {};
-	user() : serializable("user") {};
+	~user() {
+		for(int i = 0; i < characters.size(); i++) {
+			delete characters[i];
+		}
+		for(int i = 0; i < behaviors.size(); i++) {
+			delete behaviors[i];
+		}
+	};
+	static serializable * get_user(int id) {
+		return new user(id);
+	};
 };
-serializable * get_user(int id) {
-	user * s = new user(id);
-	s->load();
-	return s;
-}
-
-class behavior  : public serializable {
+class behavior : public serializable {
 public:
 	std::string category;
 	std::string subcategory;
 	int current;
 	int required;
+	behavior(int id) : serializable("behavior", id) {
+		category = "";
+		subcategory = "";
+		current = 0;
+		required = 0;
+	};
+	behavior() : serializable("behavior") {
+		category = "";
+		subcategory = "";
+		current = 0;
+		required = 0;
+	};
 	void serialize(datastream ds) {
 		ds & category;
 		ds & subcategory;
 		ds & current;
 		ds & required;
 	};
-	behavior (int id) : serializable("behavior ", id) {};
-	behavior () : serializable("behavior ") {};
+	~behavior() {
+	};
+	static serializable * get_behavior(int id) {
+		return new behavior(id);
+	};
 };
-serializable * get_behavior (int id) {
-	behavior  * s = new behavior (id);
-	s->load();
-	return s;
-}
-
 class character : public serializable {
 public:
 	std::string charactername;
@@ -66,6 +90,22 @@ public:
 	std::vector<serializable *> equipment;
 	std::vector<serializable *> inventory;
 	serializable * map;
+	character(int id) : serializable("character", id) {
+		charactername = "";
+		current = NULL;
+		max = NULL;
+		equipment = std::vector<serializable *>();
+		inventory = std::vector<serializable *>();
+		map = NULL;
+	};
+	character() : serializable("character") {
+		charactername = "";
+		current = NULL;
+		max = NULL;
+		equipment = std::vector<serializable *>();
+		inventory = std::vector<serializable *>();
+		map = NULL;
+	};
 	void serialize(datastream ds) {
 		ds & charactername;
 		ds & current;
@@ -74,15 +114,21 @@ public:
 		ds & inventory;
 		ds & map;
 	};
-	character(int id) : serializable("character", id) {};
-	character() : serializable("character") {};
+	~character() {
+		delete current;
+		delete max;
+		for(int i = 0; i < equipment.size(); i++) {
+			delete equipment[i];
+		}
+		for(int i = 0; i < inventory.size(); i++) {
+			delete inventory[i];
+		}
+		delete map;
+	};
+	static serializable * get_character(int id) {
+		return new character(id);
+	};
 };
-serializable * get_character(int id) {
-	character * s = new character(id);
-	s->load();
-	return s;
-}
-
 class statistics : public serializable {
 public:
 	int level;
@@ -90,6 +136,20 @@ public:
 	int defense;
 	int intelligence;
 	int resistance;
+	statistics(int id) : serializable("statistics", id) {
+		level = 0;
+		strength = 0;
+		defense = 0;
+		intelligence = 0;
+		resistance = 0;
+	};
+	statistics() : serializable("statistics") {
+		level = 0;
+		strength = 0;
+		defense = 0;
+		intelligence = 0;
+		resistance = 0;
+	};
 	void serialize(datastream ds) {
 		ds & level;
 		ds & strength;
@@ -97,55 +157,74 @@ public:
 		ds & intelligence;
 		ds & resistance;
 	};
-	statistics(int id) : serializable("statistics", id) {};
-	statistics() : serializable("statistics") {};
+	~statistics() {
+	};
+	static serializable * get_statistics(int id) {
+		return new statistics(id);
+	};
 };
-serializable * get_statistics(int id) {
-	statistics * s = new statistics(id);
-	s->load();
-	return s;
-}
-
 class map : public serializable {
 public:
 	std::vector<serializable *> rooms;
 	int columns;
 	int rows;
+	map(int id) : serializable("map", id) {
+		rooms = std::vector<serializable *>();
+		columns = 0;
+		rows = 0;
+	};
+	map() : serializable("map") {
+		rooms = std::vector<serializable *>();
+		columns = 0;
+		rows = 0;
+	};
 	void serialize(datastream ds) {
 		ds & rooms;
 		ds & columns;
 		ds & rows;
 	};
-	map(int id) : serializable("map", id) {};
-	map() : serializable("map") {};
+	~map() {
+		for(int i = 0; i < rooms.size(); i++) {
+			delete rooms[i];
+		}
+	};
+	static serializable * get_map(int id) {
+		return new map(id);
+	};
 };
-serializable * get_map(int id) {
-	map * s = new map(id);
-	s->load();
-	return s;
-}
-
 class room : public serializable {
 public:
 	std::vector<serializable *> enemies;
 	std::vector<serializable *> items;
+	room(int id) : serializable("room", id) {
+		enemies = std::vector<serializable *>();
+		items = std::vector<serializable *>();
+	};
+	room() : serializable("room") {
+		enemies = std::vector<serializable *>();
+		items = std::vector<serializable *>();
+	};
 	void serialize(datastream ds) {
 		ds & enemies;
 		ds & items;
 	};
-	room(int id) : serializable("room", id) {};
-	room() : serializable("room") {};
+	~room() {
+		for(int i = 0; i < enemies.size(); i++) {
+			delete enemies[i];
+		}
+		for(int i = 0; i < items.size(); i++) {
+			delete items[i];
+		}
+	};
+	static serializable * get_room(int id) {
+		return new room(id);
+	};
 };
-serializable * get_room(int id) {
-	room * s = new room(id);
-	s->load();
-	return s;
-}
 void datastream::register_constructors() {
-	datastream::register_constructor(get_user, "user");
-	datastream::register_constructor(get_behavior , "behavior ");
-	datastream::register_constructor(get_character, "character");
-	datastream::register_constructor(get_statistics, "statistics");
-	datastream::register_constructor(get_map, "map");
-	datastream::register_constructor(get_room, "room");
+	register_constructor(user::get_user, "user");
+	register_constructor(behavior::get_behavior, "behavior");
+	register_constructor(character::get_character, "character");
+	register_constructor(statistics::get_statistics, "statistics");
+	register_constructor(map::get_map, "map");
+	register_constructor(room::get_room, "room");
 }

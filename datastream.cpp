@@ -51,6 +51,7 @@ void datastream::operator &(serializable * & s) {
 		int id;
 		std::string name;
 		*file >> id;
+		//this is where caching should be handled
 		if(id) {
 			*file >> name;
 			for(int i = 0; i < datastream::constructor_names->size(); i++) {
@@ -77,6 +78,7 @@ void datastream::operator &(std::vector<serializable *> & ss) {
 		int id, size;
 		std::string name;
 		*file >> size;
+		//this is where caching should be handled
 		for(; size > 0; size--) {
 			*file >> id;
 			*file >> name;

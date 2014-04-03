@@ -1,2 +1,2 @@
-g++ preprocessor.cpp
+g++ preprocessor_i.cpp
 pause
