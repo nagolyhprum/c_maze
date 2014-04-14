@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+	<head>
+		<style type="text/css">
+			.console {
+				background : black;
+				color : white;
+				width : 300px;
+				height : 200px;
+				float : left;
+				margin : 10px;
+				padding : 10px;
+				border-radius : 5px;
+				overflow : auto;
+			}
+		</style>
+		<script type="text/javascript">
+			function Scanner(buffer) {this.buffer = buffer;}
+			Scanner.prototype.toString = function() {return this.buffer;};
+		
+			var ws = new WebSocket("ws://localhost:8080");
+			ws.onopen = function() {
+				console.log("connected");	
+				next();				
+			};					
+			ws.onmessage = function(e) {
+				var ie = e.data.indexOf(" ");
+				var f = window[e.data.substr(0, ie)];
+				if(f) {
+					f(new Scanner(e.data.substr(ie + 1)));
+				} else {
+					console.log("unhandled event : " + e.data);
+				}
+			};
+			ws.onerror = function() {
+				console.log("error");
+			};
+			ws.onclose = function() {
+				console.log("close");
+			};
+			function next() {
+				if(tests.length) {
+					ws.send(tests[0]);
+					tests.splice(0, 1);
+					setTimeout(next, 1000);
+				}
+			}
+			
+			var tests = [
+				//signup username password size fullname
+				"signup nagolyhprum Pa55word 12 Logan Murphy",
+				"signup nagolyhprum Pa55word 12 Logan Murphy",
+				//signin username password
+				"signin wrong Pa55word",
+				"signin nagolyhprum wrong",
+				"signin nagolyhprum Pa55word",
+				//characters getall
+				"characters getall",
+				//characters add size name
+				"characters add 4 John",
+				//maze [character_id [maze_modeld_id]]
+				"maze",
+				"maze 1",
+				"maze 1 1"
+			];
+			
+			function log(msg) {
+				document.getElementById("log").innerHTML += "<p>" + msg + "</p>";
+			}
+			
+			function echo(msg) {
+				document.getElementById("echo").innerHTML += "<p>" + msg + "</p>";				
+			}
+		</script>
+	</head>
+	<body>
+		<div id="log" class="console"><h3>Log</h3></div>
+		<div id="echo" class="console"><h3>Echo</h3></div>
+	</body>
+</html>

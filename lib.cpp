@@ -14,13 +14,17 @@ int get_id(std::string name) {
 	int id = 0;
 	std::fstream file;
 	mkdir("data/");
-	mkdir(("data/" + name).c_str());
+	mkdir(("data/" + name).c_str());	
 	file.open(("data/" + name + "/ds.conf").c_str(), std::fstream::in);
-	file >> id;
-	file.close();
+	if(file.is_open()) {
+		file >> id;
+		file.close();
+	}
 	id++;
 	file.open(("data/" + name + "/ds.conf").c_str(), std::fstream::out | std::fstream::trunc);
-	file << id;	
-	file.close();
+	if(file.is_open()) {
+		file << id;	
+		file.close();
+	}
 	return id;
 }

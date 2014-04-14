@@ -8,7 +8,7 @@ class behavior;
 class character;
 class enemy;
 class item;
-class map;
+class maze;
 class room;
 class user;
 class skill;
@@ -35,7 +35,11 @@ class statistics;
 	serializable * max
 	std::vector<serializable *> equipment
 	std::vector<serializable *> inventory
-	serializable * map
+	serializable * maze
+	int x
+	int y
+	int column
+	int row
 #end
 
 #serialize statistics
@@ -46,13 +50,44 @@ class statistics;
 	int resistance
 #end
 
-#serialize map
+#serialize maze
 	std::vector<serializable *> rooms
 	int columns
 	int rows
 #end
 
 #serialize room
+	int doors
 	std::vector<serializable *> enemies
 	std::vector<serializable *> items
+#end
+
+#serialize enemy
+	std::string name
+	std::string resources
+	serializable * current
+	serializable * max
+	int lastMove
+	int x
+	int y
+#end
+
+#serialize mazemodel
+	std::string name
+	std::string resources
+	std::vector<serializable *> roommodels
+	int columns
+	int rows
+#end
+
+#serialize roommodel
+	std::vector<serializable *> enemymodels
+#end
+
+#serialize enemymodel
+	std::string name
+	std::string resources
+	serializable * statistics
+	int x
+	int y
 #end

@@ -14,16 +14,6 @@ typedef struct {
 	vector<field> fields;
 } clazz;
 
-void freeit(field f) {
-	if(f.type.find("vector") != string::npos) {
-		cout << "\t\tfor(int i = 0; i < " << f.name << ".size(); i++) {\n";
-		cout << "\t\t\tdelete " << f.name << "[i];\n";
-		cout << "\t\t}\n";
-	} else if(f.type.find("serializable") != string::npos) {
-		cout << "\t\tdelete " << f.name << ";\n";
-	}
-}
-
 string defaultValue(string type) {
 	if(type.find("vector") != string::npos) {
 		return " = std::vector<serializable *>();";
@@ -94,11 +84,11 @@ int main(void) {
 			cout << "\t\tds & " << f.name << ";\n";
 		}
 		cout << "\t};\n";
-		//deconstructor
-		cout << "\t~" << c->name << "() {\n";
+		//clone
+		cout << "\tvoid copyTo(" << c->name << " * s) {\n";
 		for(int j = 0; j < c->fields.size(); j++) {
 			field f = c->fields[j];
-			freeit(f);
+			cout << "\t\ts->" << f.name << " = " << f.name << ";\n";
 		}
 		cout << "\t};\n";
 		//getter

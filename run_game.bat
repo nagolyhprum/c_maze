@@ -1,4 +1,4 @@
 rm data -r
 rm accounts -r
-a
+game
 pause

@@ -22,6 +22,7 @@ datastream::datastream(datastream & ds) {
 
 void datastream::close() {
 	file->close();
+	delete file;
 };
 
 void datastream::operator &(std::string & s) {	

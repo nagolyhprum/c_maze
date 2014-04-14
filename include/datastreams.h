@@ -7,7 +7,7 @@ class behavior;
 class character;
 class enemy;
 class item;
-class map;
+class maze;
 class room;
 class user;
 class skill;
@@ -40,13 +40,12 @@ public:
 		ds & characters;
 		ds & behaviors;
 	};
-	~user() {
-		for(int i = 0; i < characters.size(); i++) {
-			delete characters[i];
-		}
-		for(int i = 0; i < behaviors.size(); i++) {
-			delete behaviors[i];
-		}
+	void copyTo(user * s) {
+		s->fullname = fullname;
+		s->username = username;
+		s->password = password;
+		s->characters = characters;
+		s->behaviors = behaviors;
 	};
 	static serializable * get_user(int id) {
 		return new user(id);
@@ -76,7 +75,11 @@ public:
 		ds & current;
 		ds & required;
 	};
-	~behavior() {
+	void copyTo(behavior * s) {
+		s->category = category;
+		s->subcategory = subcategory;
+		s->current = current;
+		s->required = required;
 	};
 	static serializable * get_behavior(int id) {
 		return new behavior(id);
@@ -89,14 +92,22 @@ public:
 	serializable * max;
 	std::vector<serializable *> equipment;
 	std::vector<serializable *> inventory;
-	serializable * map;
+	serializable * maze;
+	int x;
+	int y;
+	int column;
+	int row;
 	character(int id) : serializable("character", id) {
 		charactername = "";
 		current = NULL;
 		max = NULL;
 		equipment = std::vector<serializable *>();
 		inventory = std::vector<serializable *>();
-		map = NULL;
+		maze = NULL;
+		x = 0;
+		y = 0;
+		column = 0;
+		row = 0;
 	};
 	character() : serializable("character") {
 		charactername = "";
@@ -104,7 +115,11 @@ public:
 		max = NULL;
 		equipment = std::vector<serializable *>();
 		inventory = std::vector<serializable *>();
-		map = NULL;
+		maze = NULL;
+		x = 0;
+		y = 0;
+		column = 0;
+		row = 0;
 	};
 	void serialize(datastream ds) {
 		ds & charactername;
@@ -112,18 +127,23 @@ public:
 		ds & max;
 		ds & equipment;
 		ds & inventory;
-		ds & map;
+		ds & maze;
+		ds & x;
+		ds & y;
+		ds & column;
+		ds & row;
 	};
-	~character() {
-		delete current;
-		delete max;
-		for(int i = 0; i < equipment.size(); i++) {
-			delete equipment[i];
-		}
-		for(int i = 0; i < inventory.size(); i++) {
-			delete inventory[i];
-		}
-		delete map;
+	void copyTo(character * s) {
+		s->charactername = charactername;
+		s->current = current;
+		s->max = max;
+		s->equipment = equipment;
+		s->inventory = inventory;
+		s->maze = maze;
+		s->x = x;
+		s->y = y;
+		s->column = column;
+		s->row = row;
 	};
 	static serializable * get_character(int id) {
 		return new character(id);
@@ -157,23 +177,28 @@ public:
 		ds & intelligence;
 		ds & resistance;
 	};
-	~statistics() {
+	void copyTo(statistics * s) {
+		s->level = level;
+		s->strength = strength;
+		s->defense = defense;
+		s->intelligence = intelligence;
+		s->resistance = resistance;
 	};
 	static serializable * get_statistics(int id) {
 		return new statistics(id);
 	};
 };
-class map : public serializable {
+class maze : public serializable {
 public:
 	std::vector<serializable *> rooms;
 	int columns;
 	int rows;
-	map(int id) : serializable("map", id) {
+	maze(int id) : serializable("maze", id) {
 		rooms = std::vector<serializable *>();
 		columns = 0;
 		rows = 0;
 	};
-	map() : serializable("map") {
+	maze() : serializable("maze") {
 		rooms = std::vector<serializable *>();
 		columns = 0;
 		rows = 0;
@@ -183,41 +208,188 @@ public:
 		ds & columns;
 		ds & rows;
 	};
-	~map() {
-		for(int i = 0; i < rooms.size(); i++) {
-			delete rooms[i];
-		}
+	void copyTo(maze * s) {
+		s->rooms = rooms;
+		s->columns = columns;
+		s->rows = rows;
 	};
-	static serializable * get_map(int id) {
-		return new map(id);
+	static serializable * get_maze(int id) {
+		return new maze(id);
 	};
 };
 class room : public serializable {
 public:
+	int doors;
 	std::vector<serializable *> enemies;
 	std::vector<serializable *> items;
 	room(int id) : serializable("room", id) {
+		doors = 0;
 		enemies = std::vector<serializable *>();
 		items = std::vector<serializable *>();
 	};
 	room() : serializable("room") {
+		doors = 0;
 		enemies = std::vector<serializable *>();
 		items = std::vector<serializable *>();
 	};
 	void serialize(datastream ds) {
+		ds & doors;
 		ds & enemies;
 		ds & items;
 	};
-	~room() {
-		for(int i = 0; i < enemies.size(); i++) {
-			delete enemies[i];
-		}
-		for(int i = 0; i < items.size(); i++) {
-			delete items[i];
-		}
+	void copyTo(room * s) {
+		s->doors = doors;
+		s->enemies = enemies;
+		s->items = items;
 	};
 	static serializable * get_room(int id) {
 		return new room(id);
+	};
+};
+class enemy : public serializable {
+public:
+	std::string name;
+	std::string resources;
+	serializable * current;
+	serializable * max;
+	int lastMove;
+	int x;
+	int y;
+	enemy(int id) : serializable("enemy", id) {
+		name = "";
+		resources = "";
+		current = NULL;
+		max = NULL;
+		lastMove = 0;
+		x = 0;
+		y = 0;
+	};
+	enemy() : serializable("enemy") {
+		name = "";
+		resources = "";
+		current = NULL;
+		max = NULL;
+		lastMove = 0;
+		x = 0;
+		y = 0;
+	};
+	void serialize(datastream ds) {
+		ds & name;
+		ds & resources;
+		ds & current;
+		ds & max;
+		ds & lastMove;
+		ds & x;
+		ds & y;
+	};
+	void copyTo(enemy * s) {
+		s->name = name;
+		s->resources = resources;
+		s->current = current;
+		s->max = max;
+		s->lastMove = lastMove;
+		s->x = x;
+		s->y = y;
+	};
+	static serializable * get_enemy(int id) {
+		return new enemy(id);
+	};
+};
+class mazemodel : public serializable {
+public:
+	std::string name;
+	std::string resources;
+	std::vector<serializable *> roommodels;
+	int columns;
+	int rows;
+	mazemodel(int id) : serializable("mazemodel", id) {
+		name = "";
+		resources = "";
+		roommodels = std::vector<serializable *>();
+		columns = 0;
+		rows = 0;
+	};
+	mazemodel() : serializable("mazemodel") {
+		name = "";
+		resources = "";
+		roommodels = std::vector<serializable *>();
+		columns = 0;
+		rows = 0;
+	};
+	void serialize(datastream ds) {
+		ds & name;
+		ds & resources;
+		ds & roommodels;
+		ds & columns;
+		ds & rows;
+	};
+	void copyTo(mazemodel * s) {
+		s->name = name;
+		s->resources = resources;
+		s->roommodels = roommodels;
+		s->columns = columns;
+		s->rows = rows;
+	};
+	static serializable * get_mazemodel(int id) {
+		return new mazemodel(id);
+	};
+};
+class roommodel : public serializable {
+public:
+	std::vector<serializable *> enemymodels;
+	roommodel(int id) : serializable("roommodel", id) {
+		enemymodels = std::vector<serializable *>();
+	};
+	roommodel() : serializable("roommodel") {
+		enemymodels = std::vector<serializable *>();
+	};
+	void serialize(datastream ds) {
+		ds & enemymodels;
+	};
+	void copyTo(roommodel * s) {
+		s->enemymodels = enemymodels;
+	};
+	static serializable * get_roommodel(int id) {
+		return new roommodel(id);
+	};
+};
+class enemymodel : public serializable {
+public:
+	std::string name;
+	std::string resources;
+	serializable * statistics;
+	int x;
+	int y;
+	enemymodel(int id) : serializable("enemymodel", id) {
+		name = "";
+		resources = "";
+		statistics = NULL;
+		x = 0;
+		y = 0;
+	};
+	enemymodel() : serializable("enemymodel") {
+		name = "";
+		resources = "";
+		statistics = NULL;
+		x = 0;
+		y = 0;
+	};
+	void serialize(datastream ds) {
+		ds & name;
+		ds & resources;
+		ds & statistics;
+		ds & x;
+		ds & y;
+	};
+	void copyTo(enemymodel * s) {
+		s->name = name;
+		s->resources = resources;
+		s->statistics = statistics;
+		s->x = x;
+		s->y = y;
+	};
+	static serializable * get_enemymodel(int id) {
+		return new enemymodel(id);
 	};
 };
 void datastream::register_constructors() {
@@ -225,6 +397,10 @@ void datastream::register_constructors() {
 	register_constructor(behavior::get_behavior, "behavior");
 	register_constructor(character::get_character, "character");
 	register_constructor(statistics::get_statistics, "statistics");
-	register_constructor(map::get_map, "map");
+	register_constructor(maze::get_maze, "maze");
 	register_constructor(room::get_room, "room");
+	register_constructor(enemy::get_enemy, "enemy");
+	register_constructor(mazemodel::get_mazemodel, "mazemodel");
+	register_constructor(roommodel::get_roommodel, "roommodel");
+	register_constructor(enemymodel::get_enemymodel, "enemymodel");
 }
