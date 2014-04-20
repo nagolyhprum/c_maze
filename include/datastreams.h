@@ -220,25 +220,30 @@ public:
 class room : public serializable {
 public:
 	int doors;
+	int discovered;
 	std::vector<serializable *> enemies;
 	std::vector<serializable *> items;
 	room(int id) : serializable("room", id) {
 		doors = 0;
+		discovered = 0;
 		enemies = std::vector<serializable *>();
 		items = std::vector<serializable *>();
 	};
 	room() : serializable("room") {
 		doors = 0;
+		discovered = 0;
 		enemies = std::vector<serializable *>();
 		items = std::vector<serializable *>();
 	};
 	void serialize(datastream ds) {
 		ds & doors;
+		ds & discovered;
 		ds & enemies;
 		ds & items;
 	};
 	void copyTo(room * s) {
 		s->doors = doors;
+		s->discovered = discovered;
 		s->enemies = enemies;
 		s->items = items;
 	};

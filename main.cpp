@@ -72,47 +72,48 @@ character * getCharacterById(user * u, int id) {
 }
 
 void visit(maze * m, bool * visited, int row, int column) {
+	cout << "(" << column << ", " << row << ")\n"; 
 	visited[row * m->columns + column] = true;
-	vector<string> directions;
+	vector<int> directions;
 	if(column > 0) {
-		directions.push_back("left");
+		directions.push_back(LEFT);
 	}
 	if(row > 0) {
-		directions.push_back("up");
+		directions.push_back(UP);
 	}
 	if(column + 1 < m->columns) {
-		directions.push_back("right");
+		directions.push_back(RIGHT);
 	}
 	if(row + 1 < m->rows) {
-		directions.push_back("down");
+		directions.push_back(DOWN);
 	}
 	while(directions.size() > 0) {
 		int index = nextInt(directions.size());
-		string next = directions[index];
+		int next = directions[index];
 		directions.erase(directions.begin() + index);
 		int nextRow = row, nextColumn = column;
-		if(next.compare("up") == 0) {
+		if(next == UP) {
 			nextRow--;
-		} else if(next.compare("right") == 0) {
+		} else if(next == RIGHT) {
 			nextColumn++;
-		} else if(next.compare("down") == 0) {
+		} else if(next == DOWN) {
 			nextRow++;
-		} else if(next.compare("left") == 0) {
+		} else if(next == LEFT) {
 			nextColumn--;
 		}
 		if(!visited[nextRow * m->columns + nextColumn]) {
 			room * currentRoom = (room *) m->rooms[row * m->columns + column];
 			room * nextRoom = (room *) m->rooms[nextRow * m->columns + nextColumn];
-			if(next.compare("up")) {
+			if(next == UP) {
 				currentRoom->doors |= UP;
 				nextRoom->doors |= DOWN;
-			} else if(next.compare("right")) {
+			} else if(next == RIGHT) {
 				currentRoom->doors |= RIGHT;
 				nextRoom->doors |= LEFT;
-			} else if(next.compare("down")) {
+			} else if(next == DOWN) {
 				currentRoom->doors |= DOWN;
 				nextRoom->doors |= UP;
-			} else if(next.compare("left")) {
+			} else if(next == LEFT) {
 				currentRoom->doors |= LEFT;
 				nextRoom->doors |= RIGHT;
 			}
@@ -128,11 +129,17 @@ void mazeCmd(client & c, stringstream * ss) {
 			character * chr = getCharacterById(u, nextInt(ss));
 			if(chr->maze != NULL) { //cant make a maze until they are done this one
 				stringstream res;
-				//get one
+				res << "maze ";
+				maze * m = (maze *) chr->maze;
+				writeInt(&res, m->columns);
+				writeInt(&res, m->rows);
+				for(int i = 0; i < m->rooms.size(); i++) {
+					room * r = (room *) m->rooms[i];	
+					writeInt(&res, r->discovered ? r->doors : 0);
+				}
 				c.sendMessage(res.str());
 			} else if(!ss->eof()) {
 				int id = nextInt(ss);
-				c.sendMessage("log maze generate");
 				maze * m = (maze *)(chr->maze = new maze());
 				chr->maze = m;
 				//generate
@@ -157,26 +164,32 @@ void mazeCmd(client & c, stringstream * ss) {
 						e->x = em->x;
 						e->y = em->y;
 						e->current = new statistics();
+						e->max = new statistics();
 						statistics * s = (statistics *) em->statistics;
 						s->copyTo((statistics *) e->current);
-						e->max = new statistics();
 						s->copyTo((statistics *) e->max);
 						r->enemies.push_back(e);
 					}
 					//enemies are all good
 					m->rooms.push_back(r);
 				}
+				((room *)m->rooms[0])->discovered = 1;
 				visit(m, visited, 0, 0);
 				//walls are all good
+				statistics * s = (statistics *) chr->max;
+				s->copyTo((statistics *) chr->current);
+				chr->x = 0;
+				chr->y = 0;
+				chr->column = 0;
+				chr->row = 0;
 				chr->save();
 				delete visited;
-				delete mm;
-				delete m;
+				//delete mm; //this needs to be cached
 				stringstream get(to_string(chr->getID()));
 				mazeCmd(c, &get);
 			}
-		} else {
-			//show maze options
+		} else { //show maze options
+			
 		}
 	}
 }
@@ -208,6 +221,7 @@ void charactersCmd(client & c, stringstream * ss) {
 			writeInt(&res, id);
 			writeInt(&res, chr->current->getID());
 			writeInt(&res, chr->max->getID());
+			writeInt(&res, chr->maze != NULL);
 			sendStatistics(c, (statistics *)chr->current);
 			sendStatistics(c, (statistics *)chr->max);
 			c.sendMessage(res.str());
@@ -231,14 +245,14 @@ void signinCmd(client & c, stringstream * ss) {
 				user * u = new user(id);
 				u->load();
 				c.associated = u;
-				c.sendMessage("log successfully signed in");
+				c.sendMessage("user 0");
 				return;
 			}
 		}
-		c.sendMessage("log invalid password");
+		c.sendMessage("user 16 invalid password");
 		return;
 	}
-	c.sendMessage("log invalid username");
+	c.sendMessage("user 16 invalid username");
 }
 
 //extra validation
@@ -248,7 +262,7 @@ void signupCmd(client & c, stringstream * ss) {
 	string password = next(ss);
 	DIR * dir = opendir(("accounts/" + username).c_str());
 	if (dir) {
-		c.sendMessage("log that username is already in use");
+		c.sendMessage("user 31 that username is already in use");
 		closedir(dir);
 		return;
 	}
@@ -267,7 +281,7 @@ void signupCmd(client & c, stringstream * ss) {
 	out.open(("accounts/" + username + "/id.data").c_str(), fstream::out);
 	out << u->getID();
 	out.close();
-	c.sendMessage("log account created");
+	c.sendMessage("user 0");
 }
 
 void onMessage(client & c, string message) {

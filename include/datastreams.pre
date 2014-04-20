@@ -58,6 +58,7 @@ class statistics;
 
 #serialize room
 	int doors
+	int discovered
 	std::vector<serializable *> enemies
 	std::vector<serializable *> items
 #end
