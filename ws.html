@@ -13,10 +13,52 @@
 				border-radius : 5px;
 				overflow : auto;
 			}
-		</style>
+			
+			.room {
+				width : 20px;
+				height : 20px;
+				background : gray;
+				border : 1px solid black;
+				float : left;
+			}
+			
+			#maze {
+				clear : both;
+			}
+			
+			.newline {
+				clear : both;
+			}
+			
+			.up {
+				border-top : 1px solid gray;
+			}
+			
+			.right {
+				border-right : 1px solid gray;
+			}
+			
+			.down {
+				border-bottom : 1px solid gray;
+			}
+			
+			.left {
+				border-left : 1px solid gray;
+			}
+		</style>		
 		<script type="text/javascript">
-			function Scanner(buffer) {this.buffer = buffer;}
+			function Scanner(buffer) {this.buffer = buffer;this.index = 0;}
 			Scanner.prototype.toString = function() {return this.buffer;};
+			Scanner.prototype.nextInt = function() {
+				while(this.buffer[this.index] === " " && this.index < this.buffer.length) {
+					this.index++;
+				}
+				var number = "";
+				while(this.buffer[this.index] >= '0' && this.buffer[this.index] <= '9') {
+					number += this.buffer[this.index++];
+				}
+				return parseFloat(number);
+			};
 		
 			var ws = new WebSocket("ws://localhost:8080");
 			ws.onopen = function() {
@@ -59,22 +101,74 @@
 				//characters add size name
 				"characters add 4 John",
 				//maze [character_id [maze_modeld_id]]
-				"maze",
-				"maze 1",
-				"maze 1 1"
+				"maze", //get models
+				"maze 1", //look at character
+				"maze 1 1" //create for character
 			];
 			
-			function log(msg) {
-				document.getElementById("log").innerHTML += "<p>" + msg + "</p>";
-			}
+			var handled = {};
+			document.onkeydown = function(e) {
+				if(!handled[e.which]) {
+					if(e.which == 38) { //up
+						ws.send("move 1 1");
+						ws.send("maze 1");
+					}
+					if(e.which == 39) { //right
+						ws.send("move 1 2");
+						ws.send("maze 1");
+					}
+					if(e.which == 40) { //down
+						ws.send("move 1 4");
+						ws.send("maze 1");
+					}
+					if(e.which == 37) { //left
+						ws.send("move 1 8");
+						ws.send("maze 1");
+					}
+				}
+				handled[e.which] = true;
+			};
+			document.onkeyup = function(e) {
+				handled[e.which] = false;
+			};
 			
 			function echo(msg) {
 				document.getElementById("echo").innerHTML += "<p>" + msg + "</p>";				
 			}
+			
+			function maze(msg) {
+				var rows = msg.nextInt(),
+					columns = msg.nextInt(),
+					inner = "<div>";				
+				for(var i = 0; i < rows; i++) {
+					inner += "<div>";
+					for(var j = 0; j < columns; j++) {
+						var doors = msg.nextInt();
+						inner += "<div class='room";
+						if(doors & 1) {
+							inner += " up";
+						}
+						if(doors & 2) {
+							inner += " right";
+						}
+						if(doors & 4) {
+							inner += " down";
+						}
+						if(doors & 8) {
+							inner += " left";
+						}
+						inner += "'></div>";
+					}
+					inner += "</div>";
+					inner += "<div class='newline'></div>";
+				}
+				inner += "</div>";
+				document.getElementById("maze").innerHTML = inner;
+			}
 		</script>
 	</head>
 	<body>
-		<div id="log" class="console"><h3>Log</h3></div>
 		<div id="echo" class="console"><h3>Echo</h3></div>
+		<div id="maze"></div>
 	</body>
 </html>

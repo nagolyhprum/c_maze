@@ -72,7 +72,6 @@ character * getCharacterById(user * u, int id) {
 }
 
 void visit(maze * m, bool * visited, int row, int column) {
-	cout << "(" << column << ", " << row << ")\n"; 
 	visited[row * m->columns + column] = true;
 	vector<int> directions;
 	if(column > 0) {
@@ -127,66 +126,68 @@ void mazeCmd(client & c, stringstream * ss) {
 		user * u = (user *)c.associated;
 		if(!ss->eof()) {
 			character * chr = getCharacterById(u, nextInt(ss));
-			if(chr->maze != NULL) { //cant make a maze until they are done this one
-				stringstream res;
-				res << "maze ";
-				maze * m = (maze *) chr->maze;
-				writeInt(&res, m->columns);
-				writeInt(&res, m->rows);
-				for(int i = 0; i < m->rooms.size(); i++) {
-					room * r = (room *) m->rooms[i];	
-					writeInt(&res, r->discovered ? r->doors : 0);
-				}
-				c.sendMessage(res.str());
-			} else if(!ss->eof()) {
-				int id = nextInt(ss);
-				maze * m = (maze *)(chr->maze = new maze());
-				chr->maze = m;
-				//generate
-				mazemodel * mm = new mazemodel(id);
-				mm->load();				
-				m->rows = mm->rows;
-				m->columns = mm->columns;
-				//setup walls
-				bool * visited = new bool[mm->columns * mm->rows];
-				for(int i = 0; i < mm->columns * mm->rows; i++) {
-					visited[m->rooms.size()] = false;
-					room * r = new room();
-					//setup enemies
-					int index = nextInt(mm->roommodels.size());
-					roommodel * rm = (roommodel *) mm->roommodels[index];
-					mm->roommodels.erase(mm->roommodels.begin() + index);
-					for(int j = 0; j < rm->enemymodels.size(); j++) {
-						enemymodel * em = (enemymodel *) rm->enemymodels[j];
-						enemy * e = new enemy();
-						e->name = em->name;
-						e->resources = em->resources;
-						e->x = em->x;
-						e->y = em->y;
-						e->current = new statistics();
-						e->max = new statistics();
-						statistics * s = (statistics *) em->statistics;
-						s->copyTo((statistics *) e->current);
-						s->copyTo((statistics *) e->max);
-						r->enemies.push_back(e);
+			if(chr != NULL) {
+				if(chr->maze != NULL) { //cant make a maze until they are done this one
+					stringstream res;
+					res << "maze ";
+					maze * m = (maze *) chr->maze;
+					writeInt(&res, m->rows);
+					writeInt(&res, m->columns);
+					for(int i = 0; i < m->rooms.size(); i++) {
+						room * r = (room *) m->rooms[i];	
+						writeInt(&res, r->discovered ? r->doors : 0);
 					}
-					//enemies are all good
-					m->rooms.push_back(r);
+					c.sendMessage(res.str());
+				} else if(!ss->eof()) {
+					int id = nextInt(ss);
+					maze * m = (maze *)(chr->maze = new maze());
+					chr->maze = m;
+					//generate
+					mazemodel * mm = new mazemodel(id);
+					mm->load();				
+					m->rows = mm->rows;
+					m->columns = mm->columns;
+					//setup walls
+					bool * visited = new bool[mm->columns * mm->rows];
+					for(int i = 0; i < mm->columns * mm->rows; i++) {
+						visited[m->rooms.size()] = false;
+						room * r = new room();
+						//setup enemies
+						int index = nextInt(mm->roommodels.size());
+						roommodel * rm = (roommodel *) mm->roommodels[index];
+						mm->roommodels.erase(mm->roommodels.begin() + index);
+						for(int j = 0; j < rm->enemymodels.size(); j++) {
+							enemymodel * em = (enemymodel *) rm->enemymodels[j];
+							enemy * e = new enemy();
+							e->name = em->name;
+							e->resources = em->resources;
+							e->x = em->x;
+							e->y = em->y;
+							e->current = new statistics();
+							e->max = new statistics();
+							statistics * s = (statistics *) em->statistics;
+							s->copyTo((statistics *) e->current);
+							s->copyTo((statistics *) e->max);
+							r->enemies.push_back(e);
+						}
+						//enemies are all good
+						m->rooms.push_back(r);
+					}
+					((room *)m->rooms[0])->discovered = 1;
+					visit(m, visited, 0, 0);
+					//walls are all good
+					statistics * s = (statistics *) chr->max;
+					s->copyTo((statistics *) chr->current);
+					chr->x = 0;
+					chr->y = 0;
+					chr->column = 0;
+					chr->row = 0;
+					chr->save();
+					delete visited;
+					//delete mm; //this needs to be cached
+					stringstream get(to_string(chr->getID()));
+					mazeCmd(c, &get);
 				}
-				((room *)m->rooms[0])->discovered = 1;
-				visit(m, visited, 0, 0);
-				//walls are all good
-				statistics * s = (statistics *) chr->max;
-				s->copyTo((statistics *) chr->current);
-				chr->x = 0;
-				chr->y = 0;
-				chr->column = 0;
-				chr->row = 0;
-				chr->save();
-				delete visited;
-				//delete mm; //this needs to be cached
-				stringstream get(to_string(chr->getID()));
-				mazeCmd(c, &get);
 			}
 		} else { //show maze options
 			
@@ -218,13 +219,19 @@ void charactersCmd(client & c, stringstream * ss) {
 			res << "character ";
 			int id = nextInt(ss);
 			character * chr = getCharacterById(u, id);
-			writeInt(&res, id);
-			writeInt(&res, chr->current->getID());
-			writeInt(&res, chr->max->getID());
-			writeInt(&res, chr->maze != NULL);
-			sendStatistics(c, (statistics *)chr->current);
-			sendStatistics(c, (statistics *)chr->max);
-			c.sendMessage(res.str());
+			if(chr != NULL) {
+				writeInt(&res, id);
+				writeInt(&res, chr->x);
+				writeInt(&res, chr->y);
+				writeInt(&res, chr->column);
+				writeInt(&res, chr->row);
+				writeInt(&res, chr->current->getID());
+				writeInt(&res, chr->max->getID());
+				writeInt(&res, chr->maze != NULL);
+				sendStatistics(c, (statistics *)chr->current);
+				sendStatistics(c, (statistics *)chr->max);
+				c.sendMessage(res.str());
+			}
 		}
 	}
 }
@@ -253,6 +260,35 @@ void signinCmd(client & c, stringstream * ss) {
 		return;
 	}
 	c.sendMessage("user 16 invalid username");
+}
+
+void moveCmd(client & c, stringstream * ss) {
+	if(c.associated != NULL) {
+		user * u = (user *) c.associated;
+		character * chr = getCharacterById(u, nextInt(ss));
+		if(chr != NULL) {
+			maze * m = (maze *)chr->maze;
+			if(m != NULL) {
+				room * r = (room *)m->rooms[chr->row * m->columns + chr->column];
+				int direction = nextInt(ss);
+				if(direction & r->doors & UP) {
+					chr->row--;
+				} else if(direction & r->doors & RIGHT) {
+					chr->column++;
+				} else if(direction & r->doors & DOWN) {
+					chr->row++;
+				} else if(direction & r->doors & LEFT) {
+					chr->column--;
+				}
+				if(direction & r->doors) {
+					c.sendMessage("move " + to_string(chr->getID()) + " " + to_string(direction));
+				}
+				r = (room *)m->rooms[chr->row * m->columns + chr->column];
+				r->discovered = 1;		
+				chr->save();				
+			}
+		}
+	}
 }
 
 //extra validation
@@ -296,6 +332,8 @@ void onMessage(client & c, string message) {
 		charactersCmd(c, &ss);
 	} else if(!command.compare("maze")) {
 		mazeCmd(c, &ss);
+	} else if(!command.compare("move")) {
+		moveCmd(c, &ss);
 	}
 }
 
@@ -315,8 +353,9 @@ void makeMazeModels() {
 	enemymodel * em = new enemymodel();
 	statistics * s = new statistics();
 	roommodel * rm = new roommodel();
-	mm->columns = 3;
-	mm->rows = 3;
+	roommodel * empty = new roommodel();
+	mm->columns = 5;
+	mm->rows = 5;
 	mm->resources = "small";
 	mm->name = "Hedge Maze";
 	s->level = 5;
@@ -328,11 +367,18 @@ void makeMazeModels() {
 	em->resources = "skeleton";
 	em->statistics = s;
 	rm->enemymodels.push_back(em);
-	for(int i = 0; i < 9; i++) {
-		mm->roommodels.push_back(rm);
+	for(int i = 0; i < mm->rows * mm->rows; i++) {		
+		if(i) {
+			mm->roommodels.push_back(rm);
+		} else {
+			mm->roommodels.push_back(empty);
+		}
 	}
 	mm->save();
 	delete mm;
+	delete em;
+	delete s;
+	delete rm;
 }
 
 int main(void) {
